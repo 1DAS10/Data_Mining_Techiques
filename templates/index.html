@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Mining - Play Tennis Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --bg-light: #f8f9fa;
+            --border-radius: 12px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container { max-width: 1300px; margin: 0 auto; padding: 20px; }
+        .header-card {
+            background: white; border-radius: var(--border-radius); padding: 28px 32px;
+            margin-bottom: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); border: none; text-align: center;
+        }
+        .header-card h1 { color: var(--primary-color); font-weight: 700; font-size: 2rem; margin-bottom: 8px; }
+        .header-card h1 i { color: var(--secondary-color); margin-right: 8px; }
+        .header-card p { color: #7f8c8d; font-size: 1rem; }
+        .target-info {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border-radius: 10px; padding: 14px 22px; margin-bottom: 22px;
+            border-left: 4px solid var(--warning-color);
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+        }
+        .target-info strong { color: var(--primary-color); }
+        .badge-target { background: var(--warning-color); color: white; font-size: 0.9rem; padding: 4px 14px; border-radius: 20px; }
+        .data-preview-card {
+            background: white; border-radius: var(--border-radius); padding: 20px 24px;
+            margin-bottom: 28px; box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        .data-preview-card h3 { color: var(--primary-color); border-bottom: 3px solid var(--secondary-color); padding-bottom: 10px; margin-bottom: 15px; font-weight: 600; }
+        .data-preview-card .table { font-size: 0.82rem; margin-bottom: 0; width: 100%; border-collapse: collapse; }
+        .data-preview-card .table tr th,
+        .data-preview-card .table tr td {
+            padding: 6px 10px; white-space: nowrap; vertical-align: middle; text-align: center;
+        }
+        .data-preview-card .table thead tr th { background: var(--primary-color); color: white; text-align: center; }
+        .cell-card {
+            background: white; border-radius: var(--border-radius);
+            margin-bottom: 22px; box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+            overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cell-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
+        .cell-header {
+            background: linear-gradient(135deg, var(--primary-color), #34495e);
+            color: white; padding: 14px 22px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; user-select: none;
+        }
+        .cell-header .cell-number {
+            background: var(--secondary-color); padding: 2px 14px; border-radius: 20px;
+            font-size: 0.8rem; margin-right: 10px; font-weight: 600;
+        }
+        .cell-header .cell-name { font-weight: 600; font-size: 1rem; }
+        .cell-body {
+            padding: 0; max-height: 0; overflow: hidden;
+            transition: max-height 0.45s ease, padding 0.3s ease;
+        }
+        .cell-body.active { max-height: 10000px; padding: 18px 22px; }
+        .params-panel {
+            background: #f0f4f8; border-radius: 8px; padding: 14px 18px;
+            margin-bottom: 14px; border: 1px solid #dde4ec;
+            display: none;
+        }
+        .params-panel.visible { display: block; }
+        .params-panel .param-row {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .params-panel .param-row:last-child { margin-bottom: 0; }
+        .params-panel label { font-weight: 500; font-size: 0.88rem; color: var(--primary-color); min-width: 120px; }
+        .params-panel .form-select, .params-panel .form-range { flex: 1; max-width: 220px; }
+        .params-panel .form-check-input { width: 40px; height: 22px; cursor: pointer; }
+        .params-panel .param-value-display { font-weight: 600; color: var(--secondary-color); min-width: 35px; text-align: center; }
+        .btn-run-cell { background: var(--success-color); color: white; border: none; padding: 5px 16px; border-radius: 6px; font-size: 0.85rem; }
+        .btn-run-cell:hover { background: #1e8449; color: white; }
+        .btn-run-cell:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-params-toggle { background: transparent; color: #adb5bd; border: 1px solid #6c757d; padding: 4px 12px; border-radius: 6px; font-size: 0.8rem; }
+        .btn-params-toggle:hover { background: rgba(255,255,255,0.1); color: white; }
+        .btn-params-toggle.active { background: var(--secondary-color); border-color: var(--secondary-color); color: white; }
+        .status-badge { font-size: 0.72rem; padding: 3px 12px; border-radius: 20px; white-space: nowrap; }
+        .status-pending { background: var(--warning-color); color: white; }
+        .status-running { background: #6c757d; color: white; }
+        .status-success { background: var(--success-color); color: white; }
+        .status-error { background: var(--danger-color); color: white; }
+        .cell-output-tabs { margin-top: 12px; }
+        .cell-output-tabs .nav-tabs { border-bottom: 2px solid #dee2e6; }
+        .cell-output-tabs .nav-link { color: #6c757d; font-size: 0.85rem; padding: 6px 16px; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .cell-output-tabs .nav-link.active { color: var(--secondary-color); border-bottom-color: var(--secondary-color); background: transparent; font-weight: 600; }
+        .cell-output-tabs .tab-content { padding: 12px 0; }
+        .cell-raw-output {
+            background: #1e1e1e; color: #d4d4d4;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.82rem; padding: 16px 20px; border-radius: 8px;
+            white-space: pre-wrap; word-wrap: break-word;
+            max-height: 500px; overflow-y: auto; line-height: 1.5;
+        }
+        .cell-raw-output::-webkit-scrollbar { width: 6px; }
+        .cell-raw-output::-webkit-scrollbar-track { background: #2d2d2d; border-radius: 3px; }
+        .cell-raw-output::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        .table-output { overflow-x: auto; }
+        .table-output table { font-size: 0.82rem; margin-bottom: 16px; table-layout: auto; width: 100%; }
+        .table-output table th,
+        .table-output table td {
+            padding: 6px 10px; white-space: nowrap; vertical-align: middle; text-align: center;
+        }
+        .table-output table th { background: var(--primary-color); color: white; font-weight: 600; }
+        .table-output .table-caption { font-weight: 500; color: var(--primary-color); margin-bottom: 4px; margin-top: 16px; }
+        .table-output .table-caption:first-child { margin-top: 0; }
+        .table-output .table-responsive-sm { max-height: 350px; overflow-y: auto; }
+        .table-output .table-responsive-sm::-webkit-scrollbar { width: 6px; }
+        .table-output .table-responsive-sm::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        .table-output .table-responsive-sm::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        .tree-container { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.82rem; }
+        .tree-node { margin-left: 20px; border-left: 2px solid var(--secondary-color); padding-left: 14px; margin-top: 6px; }
+        .tree-node-inline { display: inline-flex; align-items: center; gap: 8px; }
+        .tree-split { background: #e8f4fd; border: 1px solid #b6d4fe; border-radius: 6px; padding: 6px 14px; margin: 4px 0; display: inline-block; }
+        .tree-leaf { background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 6px 14px; margin: 4px 0; display: inline-block; }
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; display: none; }
+        .progress-container.active { display: block; }
+        .progress-bar-custom {
+            height: 100%; background: linear-gradient(90deg, var(--secondary-color), var(--success-color));
+            width: 0%; transition: width 0.4s;
+        }
+        .extra-info { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .extra-info .stat-card {
+            background: #f8f9fa; border-radius: 8px; padding: 8px 16px; border: 1px solid #e9ecef;
+            text-align: center; min-width: 100px;
+        }
+        .extra-info .stat-card .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--secondary-color); }
+        .extra-info .stat-card .stat-label { font-size: 0.72rem; color: #6c757d; }
+        @media (max-width: 768px) {
+            .header-card h1 { font-size: 1.4rem; }
+            .cell-header { flex-direction: column; gap: 8px; }
+            .cell-header .d-flex { width: 100%; justify-content: flex-end; }
+            .params-panel .param-row { flex-direction: column; align-items: flex-start; }
+            .params-panel .form-select, .params-panel .form-range { max-width: 100%; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-container" id="globalProgress">
+        <div class="progress-bar-custom" id="progressBar"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="header-card">
+            <h1><i class="bi bi-graph-up-arrow"></i> Data Mining - Play Tennis</h1>
+            <p>Khai thác dữ liệu với các thuật toán: Tuong quan, Apriori, Rough Set, Naive Bayes, ID3, K-Means, Kohonen SOM</p>
+            <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
+                <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Refresh</a>
+                <button class="btn btn-success" onclick="runAllCells()">
+                    <i class="bi bi-play-fill"></i> Chay tat ca
+                </button>
+            </div>
+        </div>
+
+        <div class="target-info">
+            <div>
+                <strong><i class="bi bi-bullseye"></i> Target Label:</strong> 
+                <span class="badge-target">{{ stats.target }}</span>
+                <span class="ms-3"><strong>Rows:</strong> {{ stats.rows }} | <strong>Columns:</strong> {{ stats.cols }}</span>
+            </div>
+            <div>
+                {% for val, count in stats.target_values.items() %}
+                <span class="badge bg-info me-1">{{ val }}: {{ count }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="data-preview-card">
+            <h3><i class="bi bi-table"></i> Du lieu Play Tennis</h3>
+            <div class="table-responsive">
+                {{ data_preview|safe }}
+            </div>
+        </div>
+
+        {% set cell_info = [
+            ('Tuong quan Pearson', 'Tinh do tuong quan giua cac thuoc tinh va Play bang Pearson Correlation'),
+            ('Apriori & Luat ket hop', 'Tim tap pho bien va luat ket hop voi thuat toan Apriori'),
+            ('Tap tho (Rough Set)', 'Xay dung ma tran phan biet, tim Reduct va sinh luat'),
+            ('Naive Bayes', 'Phan lop Bayes co/khong lam tron Laplace'),
+            ('Cay quyet dinh ID3', 'Xay dung cay quyet dinh voi Information Gain va Gini Index'),
+            ('K-Means', 'Gom cum K-Means tren play_tennis'),
+            ('Kohonen SOM', 'Mang Kohonen Self-Organizing Map'),
+            ('So sanh K-Means vs SOM', 'So sanh ket qua gom cum giua K-Means va Kohonen')
+        ] %}
+
+        {% for i in range(1, 9) %}
+        <div class="cell-card" id="cell-card-{{ i }}">
+            <div class="cell-header" onclick="toggleCell({{ i }})">
+                <div>
+                    <span class="cell-number">Cell {{ i }}</span>
+                    <span class="cell-name">{{ cell_info[i-1][0] }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="status-badge status-pending" id="status-{{ i }}">Chua chay</span>
+                    <button class="btn btn-sm btn-params-toggle" id="params-toggle-{{ i }}" 
+                            onclick="event.stopPropagation(); toggleParams({{ i }})"
+                            title="Tuy chinh tham so">
+                        <i class="bi bi-sliders"></i>
+                    </button>
+                    <button class="btn btn-sm btn-run-cell" onclick="event.stopPropagation(); runCell({{ i }})">
+                        <i class="bi bi-play-fill"></i> Chay
+                    </button>
+                </div>
+            </div>
+            
+            <div class="cell-body" id="cell-body-{{ i }}">
+                <p class="text-muted mb-3"><i class="bi bi-info-circle"></i> {{ cell_info[i-1][1] }}</p>
+                
+                <div class="params-panel" id="params-{{ i }}">
+                    <div class="param-rows" id="param-rows-{{ i }}"></div>
+                </div>
+                
+                <div class="extra-info" id="extra-{{ i }}"></div>
+                
+                <div class="cell-output-tabs" id="output-tabs-{{ i }}" style="display:none;">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tables-tab-{{ i }}" data-bs-toggle="tab" 
+                                    data-bs-target="#tables-content-{{ i }}" type="button" role="tab">
+                                <i class="bi bi-table"></i> Bang bieu
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="raw-tab-{{ i }}" data-bs-toggle="tab" 
+                                    data-bs-target="#raw-content-{{ i }}" type="button" role="tab">
+                                <i class="bi bi-code-slash"></i> Raw Output
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation" id="tree-tab-li-{{ i }}" style="display:none;">
+                            <button class="nav-link" id="tree-tab-{{ i }}" data-bs-toggle="tab" 
+                                    data-bs-target="#tree-content-{{ i }}" type="button" role="tab">
+                                <i class="bi bi-diagram-3"></i> Cay quyet dinh
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tables-content-{{ i }}" role="tabpanel">
+                            <div class="table-output" id="tables-output-{{ i }}"></div>
+                        </div>
+                        <div class="tab-pane fade" id="raw-content-{{ i }}" role="tabpanel">
+                            <div class="cell-raw-output" id="raw-output-{{ i }}">Nhan "Chay" de xem ket qua...</div>
+                        </div>
+                        <div class="tab-pane fade" id="tree-content-{{ i }}" role="tabpanel">
+                            <div class="tree-container" id="tree-output-{{ i }}"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="cell-raw-output" id="raw-output-only-{{ i }}" style="display:none;">Nhan "Chay" de xem ket qua...</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        /* Variables injected by Flask */
+        var cellParams = {{ cell_params|tojson|safe }};
+        var cellResults = {};
+
+        function initParams() {
+            for (var cellId in cellParams) {
+                var params = cellParams[cellId];
+                var container = document.getElementById('param-rows-' + cellId);
+                if (!container) continue;
+                var html = '';
+                for (var key in params) {
+                    var p = params[key];
+                    html += '<div class="param-row">';
+                    html += '<label for="param-' + cellId + '-' + key + '">' + p.label + '</label>';
+                    if (p.type === 'select') {
+                        html += '<select class="form-select form-select-sm" id="param-' + cellId + '-' + key + '">';
+                        for (var oi = 0; oi < p.options.length; oi++) {
+                            var opt = p.options[oi];
+                            var sel = (opt === p.default) ? ' selected' : '';
+                            html += '<option value="' + opt + '"' + sel + '>' + opt + '</option>';
+                        }
+                        html += '</select>';
+                    } else if (p.type === 'slider') {
+                        html += '<input type="range" class="form-range" style="max-width:180px;" id="param-' + cellId + '-' + key + '"';
+                        html += ' min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + p.default + '"';
+                        html += ' oninput="document.getElementById(\'param-val-' + cellId + '-' + key + '\').textContent=this.value">';
+                        html += '<span class="param-value-display" id="param-val-' + cellId + '-' + key + '">' + p.default + '</span>';
+                    } else if (p.type === 'toggle') {
+                        var checked = p.default ? ' checked' : '';
+                        html += '<div class="form-check form-switch" style="margin:0;">';
+                        html += '<input class="form-check-input" type="checkbox" role="switch" id="param-' + cellId + '-' + key + '"' + checked + '>';
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                container.innerHTML = html;
+            }
+        }
+
+        function getParams(cellId) {
+            var params = cellParams[cellId] || {};
+            var result = {};
+            for (var key in params) {
+                var el = document.getElementById('param-' + cellId + '-' + key);
+                if (el) {
+                    if (params[key].type === 'toggle') {
+                        result[key] = el.checked;
+                    } else if (params[key].type === 'slider') {
+                        result[key] = parseFloat(el.value);
+                    } else {
+                        result[key] = el.value;
+                    }
+                }
+            }
+            return result;
+        }
+
+        function toggleCell(id) {
+            var body = document.getElementById('cell-body-' + id);
+            body.classList.toggle('active');
+        }
+
+        function toggleParams(id) {
+            var panel = document.getElementById('params-' + id);
+            var btn = document.getElementById('params-toggle-' + id);
+            panel.classList.toggle('visible');
+            btn.classList.toggle('active');
+        }
+
+        function expandCell(id) {
+            document.getElementById('cell-body-' + id).classList.add('active');
+        }
+
+        function setLoading(id) {
+            var status = document.getElementById('status-' + id);
+            var rawOutput = document.getElementById('raw-output-' + id);
+            var rawOnly = document.getElementById('raw-output-only-' + id);
+            var tabs = document.getElementById('output-tabs-' + id);
+            status.className = 'status-badge status-running';
+            status.textContent = 'Dang chay...';
+            if (rawOutput) rawOutput.innerHTML = '<span style="color:#888;"><i class="bi bi-arrow-repeat"></i> Dang xu ly...</span>';
+            if (rawOnly) rawOnly.innerHTML = '<span style="color:#888;"><i class="bi bi-arrow-repeat"></i> Dang xu ly...</span>';
+            tabs.style.display = 'none';
+            rawOnly.style.display = 'block';
+        }
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            var amp = String.fromCharCode(38);
+            var lt = String.fromCharCode(60);
+            var gt = String.fromCharCode(62);
+            var quot = String.fromCharCode(34);
+            return String(text)
+                .replace(new RegExp(amp, 'g'), amp + 'amp;')
+                .replace(new RegExp(lt, 'g'), amp + 'lt;')
+                .replace(new RegExp(gt, 'g'), amp + 'gt;')
+                .replace(new RegExp(quot, 'g'), amp + 'quot;');
+        }
+
+        function buildExtraInfo(id, result) {
+            var container = document.getElementById('extra-' + id);
+            var html = '';
+            if (result.extra) {
+                var extra = result.extra;
+                if (extra.r !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.r + '</div><div class="stat-label">r (Pearson)</div></div>';
+                }
+                if (extra.conclusion) {
+                    html += '<div class="stat-card"><div class="stat-value" style="font-size:0.85rem;">' + extra.conclusion + '</div><div class="stat-label">Ket luan</div></div>';
+                }
+                if (extra.n_itemsets !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.n_itemsets + '</div><div class="stat-label">Itemsets</div></div>';
+                }
+                if (extra.n_rules !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.n_rules + '</div><div class="stat-label">Rules</div></div>';
+                }
+                if (extra.accuracy !== undefined) {
+                    var accColor = extra.accuracy >= 80 ? 'var(--success-color)' : (extra.accuracy >= 50 ? 'var(--warning-color)' : 'var(--danger-color)');
+                    html += '<div class="stat-card"><div class="stat-value" style="color:' + accColor + ';">' + extra.accuracy + '%</div><div class="stat-label">Accuracy</div></div>';
+                }
+                if (extra.precision !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.precision + '</div><div class="stat-label">Precision</div></div>';
+                }
+                if (extra.recall !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.recall + '</div><div class="stat-label">Recall</div></div>';
+                }
+                if (extra.f1_score !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.f1_score + '</div><div class="stat-label">F1-Score</div></div>';
+                }
+                if (extra.k !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.k + '</div><div class="stat-label">k (K-Means)</div></div>';
+                }
+                if (extra.metrics && extra.metrics.silhouette) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.metrics.silhouette + '</div><div class="stat-label">Silhouette</div></div>';
+                }
+                if (extra.metrics && extra.metrics.davies_bouldin) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.metrics.davies_bouldin + '</div><div class="stat-label">Davies-Bouldin</div></div>';
+                }
+                if (extra.n_neurons !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.occupied_cells + '/' + extra.n_neurons + '</div><div class="stat-label">Noron co DL</div></div>';
+                }
+                if (extra.n_conditions !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.n_conditions + '</div><div class="stat-label">Dieu kien</div></div>';
+                }
+                if (extra.n_reducts !== undefined) {
+                    html += '<div class="stat-card"><div class="stat-value">' + extra.n_reducts + '</div><div class="stat-label">Reducts</div></div>';
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function buildTreeHtml(tree) {
+            if (tree.type === 'leaf') {
+                var leafLabel = escapeHtml(String(tree.label));
+                return '<div class="tree-leaf"><i class="bi bi-check-circle-fill" style="color:var(--success-color);"></i> KET LUAN: <strong>' + leafLabel + '</strong> <span class="text-muted">(' + tree.samples + ' mau)</span></div>';
+            }
+            var attr = escapeHtml(tree.attribute);
+            var html = '<div class="tree-split"><i class="bi bi-arrow-right-circle-fill" style="color:var(--secondary-color);"></i> Chia theo: <strong>' + attr + '</strong></div>';
+            html += '<div class="tree-node">';
+            var childKeys = Object.keys(tree.children);
+            for (var ki = 0; ki < childKeys.length; ki++) {
+                var val = childKeys[ki];
+                var child = tree.children[val];
+                html += '<div class="tree-node-inline">';
+                html += '<span class="badge bg-info me-1">' + escapeHtml(val) + '</span>';
+                html += buildTreeHtml(child);
+                html += '</div>';
+                if (ki < childKeys.length - 1) html += '<br>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function setSuccess(id, result) {
+            var status = document.getElementById('status-' + id);
+            var rawOutput = document.getElementById('raw-output-' + id);
+            var rawOnly = document.getElementById('raw-output-only-' + id);
+            var tabs = document.getElementById('output-tabs-' + id);
+            var tablesOutput = document.getElementById('tables-output-' + id);
+            var treeOutput = document.getElementById('tree-output-' + id);
+            var treeTabLi = document.getElementById('tree-tab-li-' + id);
+            
+            status.className = 'status-badge status-success';
+            status.textContent = 'Hoan tat';
+            
+            cellResults[id] = result;
+            
+            if (result.text) {
+                rawOutput.textContent = result.text;
+                rawOnly.textContent = result.text;
+            } else {
+                rawOutput.textContent = 'Khong co output.';
+                rawOnly.textContent = 'Khong co output.';
+            }
+            
+            var tablesHtml = '';
+            if (result.tables && result.tables.length > 0) {
+                for (var ti = 0; ti < result.tables.length; ti++) {
+                    var tbl = result.tables[ti];
+                    if (tbl.title) {
+                        tablesHtml += '<div class="table-caption"><strong>' + escapeHtml(tbl.title) + '</strong></div>';
+                    }
+                    if (tbl.headers && tbl.rows && tbl.rows.length > 0) {
+                        tablesHtml += '<div class="table-responsive-sm"><table class="table table-bordered table-hover table-sm">';
+                        tablesHtml += '<thead><tr>';
+                        for (var hi = 0; hi < tbl.headers.length; hi++) {
+                            tablesHtml += '<th>' + escapeHtml(tbl.headers[hi]) + '</th>';
+                        }
+                        tablesHtml += '</tr></thead><tbody>';
+                        for (var ri = 0; ri < tbl.rows.length; ri++) {
+                            tablesHtml += '<tr>';
+                            for (var ci = 0; ci < tbl.rows[ri].length; ci++) {
+                                var cellVal = tbl.rows[ri][ci];
+                                if (typeof cellVal === 'object' && cellVal !== null) {
+                                    cellVal = JSON.stringify(cellVal);
+                                }
+                                tablesHtml += '<td>' + escapeHtml(String(cellVal)) + '</td>';
+                            }
+                            tablesHtml += '</tr>';
+                        }
+                        tablesHtml += '</tbody></table></div>';
+                    }
+                }
+            } else {
+                tablesHtml = '<p class="text-muted">Khong co du lieu bang.</p>';
+            }
+            tablesOutput.innerHTML = tablesHtml;
+            
+            var hasTree = false;
+            if (result.tree) {
+                hasTree = true;
+                treeTabLi.style.display = 'block';
+                // Support both single tree and dual tree (gain + gini)
+                if (result.tree.gain && result.tree.gini) {
+                    treeOutput.innerHTML = '<div class="mb-3"><h5><i class="bi bi-tree-fill" style="color:var(--secondary-color);"></i> Information Gain (Entropy)</h5>' +
+                        buildTreeHtml(result.tree.gain) + '</div>' +
+                        '<hr><div class="mt-3"><h5><i class="bi bi-tree-fill" style="color:var(--success-color);"></i> Gini Index</h5>' +
+                        buildTreeHtml(result.tree.gini) + '</div>';
+                } else {
+                    treeOutput.innerHTML = buildTreeHtml(result.tree);
+                }
+            } else {
+                treeTabLi.style.display = 'none';
+            }
+            
+            buildExtraInfo(id, result);
+            
+            if (hasTree || (result.tables && result.tables.length > 0)) {
+                tabs.style.display = 'block';
+                rawOnly.style.display = 'none';
+            } else {
+                tabs.style.display = 'none';
+                rawOnly.style.display = 'block';
+            }
+        }
+
+        function setError(id, errMsg) {
+            var status = document.getElementById('status-' + id);
+            var rawOutput = document.getElementById('raw-output-' + id);
+            var rawOnly = document.getElementById('raw-output-only-' + id);
+            var tabs = document.getElementById('output-tabs-' + id);
+            status.className = 'status-badge status-error';
+            status.textContent = 'Loi';
+            var errText = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Loi: ' + escapeHtml(errMsg) + '</span>';
+            rawOutput.innerHTML = errText;
+            rawOnly.innerHTML = errText;
+            tabs.style.display = 'none';
+            rawOnly.style.display = 'block';
+        }
+
+        async function runCell(id) {
+            expandCell(id);
+            setLoading(id);
+            
+            try {
+                var params = getParams(id);
+                var response = await fetch('/api/cell/' + id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                var data = await response.json();
+                
+                if (data.status === 'error') {
+                    setError(id, data.error || 'Unknown error');
+                } else {
+                    setSuccess(id, data);
+                }
+            } catch (err) {
+                setError(id, err.message);
+            }
+        }
+
+        async function runAllCells() {
+            var progressContainer = document.getElementById('globalProgress');
+            var progressBar = document.getElementById('progressBar');
+            progressContainer.classList.add('active');
+            
+            var totalCells = 8;
+            for (var i = 1; i <= totalCells; i++) {
+                progressBar.style.width = ((i - 1) / totalCells * 100) + '%';
+                expandCell(i);
+                setLoading(i);
+                try {
+                    var params = getParams(i);
+                    var response = await fetch('/api/cell/' + i, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(params)
+                    });
+                    var data = await response.json();
+                    if (data.status === 'error') {
+                        setError(i, data.error || 'Unknown error');
+                    } else {
+                        setSuccess(i, data);
+                    }
+                } catch (err) {
+                    setError(i, err.message);
+                }
+                progressBar.style.width = (i / totalCells * 100) + '%';
+            }
+            
+            setTimeout(function() {
+                progressContainer.classList.remove('active');
+                progressBar.style.width = '0%';
+            }, 1000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initParams();
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
